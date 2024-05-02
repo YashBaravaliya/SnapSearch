@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import numpy as np
 import pickle
-from architecture import Architecture
+from src.traning.architecture import Architecture
 from keras.callbacks import Callback, EarlyStopping
 import keras
 import dlib

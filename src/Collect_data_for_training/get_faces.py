@@ -14,9 +14,9 @@ class App:
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         self.update_camera()
 
-    def submit_attendance(self, name, enrollment_no):
+    def submit_attendance(self, name):
         count = 0
-        folder_path = os.path.join("data", enrollment_no)
+        folder_path = os.path.join("data", name)
         os.makedirs(folder_path, exist_ok=True)
 
         while count < 50:
@@ -32,7 +32,7 @@ class App:
                 cv2.rectangle(frame, (face_rect.left()-5, face_rect.top()-25), (face_rect.right()+5, face_rect.bottom()+5), (0, 255, 0), 2)
                 cropped_face = frame[face_rect.top()-20:face_rect.bottom(), face_rect.left():face_rect.right()]
                 cropped_face_resized = cv2.resize(cropped_face, (112, 112))
-                save_path = os.path.join(folder_path, f"{enrollment_no}_{count+1}.png")
+                save_path = os.path.join(folder_path, f"{name}_{count+1}.png")
                 cv2.imwrite(save_path, cropped_face_resized)
 
                 for point in landmarks:
@@ -64,6 +64,5 @@ class App:
 
 if __name__ == "__main__":
     name = input("Enter your name: ")
-    enrollment_no = input("Enter your enrollment number: ")
     app = App()
-    app.submit_attendance(name, enrollment_no)
+    app.submit_attendance(name)

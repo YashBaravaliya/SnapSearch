@@ -1,35 +1,66 @@
 import os
-import imageio
-import imgaug as ia
-import imgaug.augmenters as iaa
+import cv2
+from keras.preprocessing.image import ImageDataGenerator
+import numpy as np
 
-# Define the augmentation transformations
-augmentations = [
-    iaa.Fliplr(p=1.0),  # Horizontal Flip
-    iaa.Affine(rotate=(10, -10)),  # Rotation
-    iaa.GammaContrast((0.4, 0.5)),  # Light Gamma Contrast
-    iaa.SigmoidContrast(gain=(5, 10), cutoff=(0.4, 0.6)),  # Sigmoid Contrast
-    iaa.LinearContrast((0.6, 0.4))  # Linear Contrast
-]
+def augment_images(data_folder, augmentations, max_images=100):
+    """
+    Augments images in the given data folder using the specified augmentations.
 
-# Path to your data folder
-data_folder = "data"
+    Parameters:
+        data_folder (str): Path to the data folder containing images.
+        augmentations (ImageDataGenerator): Keras ImageDataGenerator object for augmentation.
+        max_images (int): Maximum number of augmented images to generate for each original image. Default is 100.
 
-# Iterate over each subfolder (enrollment number)
-for folder_name in os.listdir(data_folder):
-    folder_path = os.path.join(data_folder, folder_name)
-    if os.path.isdir(folder_path):
-        print("Augmenting images in folder:", folder_name)
-        # Iterate over each image in the subfolder
-        for filename in os.listdir(folder_path):
-            if filename.endswith(".jpg") or filename.endswith(".png"):
-                image_path = os.path.join(folder_path, filename)
-                input_img = imageio.imread(image_path)
-                # Apply each augmentation transformation to the image
-                augmented_images = [aug.augment_image(input_img) for aug in augmentations]
-                # Save augmented images with appropriate filenames
-                for i, augmented_image in enumerate(augmented_images):
-                    output_filename = f"{filename.split('.')[0]}_aug{i}.{filename.split('.')[1]}"
-                    output_path = os.path.join(folder_path, output_filename)
-                    imageio.imwrite(output_path, augmented_image)
-        print("Augmentation completed for folder:", folder_name)
+    Returns:
+        None
+    """
+    # Check if the data folder exists
+    if not os.path.exists(data_folder):
+        print(f"Error: Data folder '{data_folder}' does not exist.")
+        return
+
+    print("Augmenting images in folder:", data_folder)
+
+    # Instantiate ImageDataGenerator for augmentation
+    datagen = augmentations
+
+    # Iterate over each image in the folder
+    for filename in os.listdir(data_folder):
+        if filename.endswith((".jpg", ".png")):
+            image_path = os.path.join(data_folder, filename)
+            input_img = cv2.imread(image_path)
+            input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
+            # Reshape image to (1, height, width, channels) for Keras generator
+            input_img = input_img.reshape((1,) + input_img.shape)
+            # Generate augmented images
+            count = 0
+            for batch in datagen.flow(input_img, batch_size=1):
+                augmented_image = batch[0].astype(np.uint8)
+                augmented_image = cv2.cvtColor(augmented_image, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(os.path.join(data_folder, f"aug_{filename}_{count}.jpg"), augmented_image)
+                count += 1
+                if count >= max_images:
+                    break
+
+    print("Augmentation completed for folder:", data_folder)
+
+
+
+# Define Keras augmentation parameters
+augmentations = ImageDataGenerator(
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+if __name__ == "__main__":
+    # Path to your data folder
+    data_folder = "temp"
+
+    # Call the function to augment images
+    augment_images(data_folder, augmentations, max_images=100)
