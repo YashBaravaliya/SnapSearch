@@ -7,6 +7,7 @@ import dlib
 from src.data_augmentation.augment import augment_images,augmentations
 from src.face_embedding.face_embedding import FaceEmbeddingGenerator
 from src.traning.train import *
+from research.prediction import FaceRecognizer
 
 class App:
     def __init__(self):
@@ -43,9 +44,41 @@ class App:
 
             return cv2_img
         
+
+def predict_faces_in_folder(folder_path, user_img):
+    # Load the face recognizer
+    face_recognizer = FaceRecognizer()
+
+    # Output folder path to save personalized images
+    output_folder = "personalized_images"
+
+    temp = 0
+    cols = st.columns(4)
+
+    # Process each image in the folder
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".jpg") or filename.endswith(".jpeg") or filename.endswith(".png"):
+            image_path = os.path.join(folder_path, filename)
+            image = cv2.imread(image_path)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            # Perform face recognition
+            predicted_label = face_recognizer.recognize_faces(image)
+
+            # Save personalized image with original file name
+            # Ask user for label and save the image if it contains a face
+            if predicted_label != "No face detected" and predicted_label == user_img:
+                face_recognizer.save_image(image, filename, output_folder)
+
+                # Display the uploaded image and prediction dynamically
+                cols[temp % 4].image(image, caption=f"Predicted Label: {predicted_label}", use_column_width=True)
+                temp += 1
+
+        
     
 if __name__ == "__main__":
     st.title("Selfie Capture")
+    folder_path = st.text_input("Enter the path to the folder containing images:")
     name = st.text_input("Enter your name:")
     data_folder = os.path.join("data", name)
     print(data_folder)
@@ -76,5 +109,10 @@ if __name__ == "__main__":
             embeddings = generate_face_embedding(data_folder_path, detector, predictor, face_rec_model)
             train_model(embeddings, arguments)
             st.success("Model trained successfully")
+
+            if folder_path and name:
+                predict_faces_in_folder(folder_path, name)
+            else:
+                st.error("Please provide a valid folder path and user image name.")
             
 
