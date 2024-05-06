@@ -59,6 +59,7 @@ class FaceRecognizer:
     def save_image(self, image, filename, output_folder):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         cv2.imwrite(os.path.join(output_folder, filename), image)
 
 if __name__ == "__main__":
